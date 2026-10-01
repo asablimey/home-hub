@@ -410,4 +410,16 @@ timers();
 if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
 if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").classList.contains("on"))amb(true)},1000);
 </script>
+<script>
+(function(){
+  var last=null;
+  function check(){
+    fetch("/api/version",{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){
+      if(last!==null&&d.v!==last)location.reload();
+      last=d.v;
+    }).catch(function(){});
+  }
+  setInterval(check,15000);check();
+})();
+</script>
 </body></html>
