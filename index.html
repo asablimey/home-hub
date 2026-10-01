@@ -57,8 +57,10 @@ input[type=range]{width:100%;accent-color:var(--ac);height:32px;touch-action:pan
 .tp i{display:block;height:100%;background:var(--ac);border-radius:9px}
 .tx{width:32px;height:32px;border-radius:50%;background:var(--s2);font-size:16px}
 .none{color:var(--mu);font-size:max(12px,5.5cqmin)}
-.art{width:min(45cqh,60cqw);aspect-ratio:1;border-radius:6cqmin;background:var(--as);color:var(--ac);display:flex;align-items:center;justify-content:center}
+.art{overflow:hidden;width:min(45cqh,60cqw);aspect-ratio:1;border-radius:6cqmin;background:var(--as);color:var(--ac);display:flex;align-items:center;justify-content:center}
 .art .i{width:30%;height:30%}
+.art img{width:100%;height:100%;object-fit:cover;display:block}
+.mt{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @container (max-height:300px){.art{display:none}}
 .trk{width:100%;height:1.6cqmin;min-height:4px;border-radius:9px;background:var(--s2)}
 .trk div{width:38%;height:100%;border-radius:9px;background:var(--ac)}
@@ -189,7 +191,7 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const C=[["Warm white",38,80],["Coral",12,78],["Pink",335,70],["Violet",258,70],["Blue",215,78],["Teal",170,65]];
 const SC=[["Study",0,90],["Chill",3,45],["Sleep",1,10]];
 const CM=[["warm white",0],["warm",0],["white",0],["coral",1],["red",1],["orange",1],["pink",2],["violet",3],["purple",3],["blue",4],["teal",5],["green",5]];
-let WX=null;
+let WX=null,MD=null;
 const S={on:true,c:3,b:60,sc:-1,play:true,mic:false,mode:"auto",vol:60,scr:100,dnd:false,pr:38,alarm:{h:6,m:30,on:true},timers:[],hist:[["ai","Hi, how can I help?"]]};
 const R=document.documentElement,P=$("#pgs"),ST=$("#st"),pages=$$(".g");
 const pad=n=>String(n).padStart(2,"0");
@@ -204,7 +206,7 @@ timer:()=>'<div class="in"><span class="r h">'+I("timer")+'Timers</span><div cla
 agenda:()=>'<div class="in"><span class="r h"><span style="color:var(--ac);display:flex">'+I("cal")+'</span>Today</span><div class="rows"><div class="ev"><b>09:00</b>Team call</div><div class="ev"><b>12:30</b>Lunch</div><div class="ev"><b>15:00</b>Groceries</div><div class="ev"><b>18:30</b>Gym</div></div></div>',
 light:()=>'<div class="in"><div class="r sp"><span class="r h">'+I("bulb")+'Bedside light</span><button class="tg js-tg" role="switch" data-a="tg" aria-label="Light power"><span></span></button></div><div class="r" style="gap:6cqmin"><div class="orb js-orb"></div><div><div class="big js-cn" style="font-size:max(18px,14cqmin)"></div><div class="lb js-bv"></div></div></div><input class="js-br" type="range" min="5" max="100" aria-label="Brightness"><div class="sw js-sw"></div></div>',
 scenes:()=>'<div class="in"><span class="h">Scenes</span><div class="chips js-ch"></div></div>',
-media:()=>'<div class="in" style="align-items:center;text-align:center"><div class="art">'+I("note")+'</div><div><div class="h">Late night mix</div><div class="lb js-vol"></div></div><div class="trk"><div></div></div><div class="ctrl"><button aria-label="Previous">'+I("back")+'</button><button class="pp js-pp" data-a="pp" aria-label="Play or pause">'+I("pause")+'</button><button aria-label="Next">'+I("fwd")+'</button></div></div>',
+media:()=>'<div class="in" style="align-items:center;text-align:center"><div class="art">'+I("note")+'</div><div style="max-width:100%"><div class="h mt js-mt">Late night mix</div><div class="lb mt js-ma">Demo, not connected</div></div><div class="trk"><div></div></div><div class="ctrl"><button data-a="pv" aria-label="Previous">'+I("back")+'</button><button class="pp js-pp" data-a="pp" aria-label="Play or pause">'+I("pause")+'</button><button data-a="nx" aria-label="Next">'+I("fwd")+'</button></div></div>',
 assistant:()=>'<div class="in"><div class="msgs js-hist"></div><div class="r"><button class="inp" data-a="ao">Ask anything</button><button class="mic" data-a="ml" aria-label="Talk to assistant">'+I("mic")+'</button></div></div>'
 };
 function fill(r){
@@ -290,7 +292,7 @@ if(/\boff\b/.test(t)){S.on=false;did=1}else if(/\bon\b/.test(t)){S.on=true;did=1
 r=did?(S.on?"Done. "+C[S.c][0]+" at "+S.b+"%.":"Light off."):"What should I do with the light?"}}
 else if(/volume|louder|quieter|turn it (up|down)/.test(t)){const m=t.match(/(\d{1,3})/);S.vol=m?Math.min(100,+m[1]):/louder|up/.test(t)?Math.min(100,S.vol+15):Math.max(0,S.vol-15);r="Volume "+S.vol+"%."}
 else if(/\b(pause|stop)\b/.test(t)){S.play=false;r="Paused."}
-else if(/\b(play|resume|music)\b/.test(t)){S.play=true;r="Playing Late night mix."}
+else if(/\b(play|resume|music)\b/.test(t)){S.play=true;r="Playing."}
 else if(/night mode|dark mode/.test(t)){S.mode="dark";r="Night mode on."}
 else if(/day mode|light mode/.test(t)){S.mode="light";r="Day mode on."}
 else if(/\btime\b/.test(t))r="It's "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".";
@@ -410,7 +412,7 @@ W.forEach(place);paint();dots();
 setInterval(()=>{
 const n=new Date();
 if(S.alarm.on&&n.getHours()===S.alarm.h&&n.getMinutes()===S.alarm.m){const k=n.toDateString()+S.alarm.h+S.alarm.m;if(lk!==k){lk=k;ring("Alarm",pad(S.alarm.h)+":"+pad(S.alarm.m))}}
-if(S.play){S.pr=(S.pr+.4)%100;$$(".trk div").forEach(e=>e.style.width=S.pr+"%")}
+if(MD){if(MD.active&&MD.dur){S.pr=Math.min(100,(MD.pos+(S.play?Date.now()-MD.t:0))/MD.dur*100);$$(".trk div").forEach(e=>e.style.width=S.pr+"%")}}else if(S.play){S.pr=(S.pr+.4)%100;$$(".trk div").forEach(e=>e.style.width=S.pr+"%")}
 timers();
 if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
 if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").classList.contains("on"))amb(true)},1000);
@@ -602,6 +604,79 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
   document.addEventListener("visibilitychange",pull);
   setInterval(pull,600000);
   pull();setTimeout(pull,8000); /* second try in case the bridge was still fetching at startup */
+})();
+</script>
+<script>
+/* ===== Media: Spotify, controlled through the Pi bridge (/api/media) =====
+   The music plays in the Spotify app on this tablet (out over Bluetooth); the Pi just remote-controls it.
+   Play/pause and volume changes are sent after a short pause (debounced); state is polled every 3 s.
+   If the bridge can't be reached (page opened from a laptop), the widget stays a local demo. */
+(function(){
+  const MS={play:S.play,vol:S.vol,pend:{},timer:0,busy:false,local:0,pulling:false,drag:false};
+  const tmo=ms=>{if(typeof AbortController==="undefined")return undefined;const a=new AbortController();setTimeout(()=>a.abort(),ms);return a.signal};
+  const live=()=>MD&&MD.connected;
+  const _paint=paint;
+  paint=function(){
+    if(!MS.pulling&&live()){
+      if(S.play!==MS.play){MS.pend.play=S.play?"play":"pause";queue()}
+      if(S.vol!==MS.vol){MS.pend.vol=S.vol;queue()}
+    }
+    MS.play=S.play;MS.vol=S.vol;
+    _paint();show();
+  };
+  function show(){
+    const d=MD;if(!d)return;
+    let t="Nothing playing",a="Open Spotify on the tablet, then press play";
+    if(d.setup){t="Spotify not connected";a="Finish the Spotify setup on the Pi"}
+    else if(d.error){t="Spotify problem";a=d.error}
+    else if(d.active){t=d.title;a=d.artist||d.device||""}
+    $$(".js-mt").forEach(e=>e.textContent=t);$$(".js-ma").forEach(e=>e.textContent=a);
+    const url=d.active&&d.art?d.art:"";
+    $$(".art").forEach(e=>{
+      if(e.dataset.u===url)return;e.dataset.u=url;
+      if(url){const im=new Image();im.alt="";im.referrerPolicy="no-referrer";im.onerror=()=>{e.dataset.u="";e.innerHTML=I("note")};im.src=url;e.replaceChildren(im)}
+      else e.innerHTML=I("note");
+    });
+    if(!d.active)$$(".trk div").forEach(e=>e.style.width="0%");
+  }
+  function queue(){clearTimeout(MS.timer);MS.timer=setTimeout(flush,250);MS.local=Date.now()}
+  async function post(body){
+    try{
+      const r=await fetch("/api/media",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:tmo(10000)});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok){toast(d.error||"Spotify didn't respond");MS.local=0;setTimeout(pull,600)}
+    }catch(e){toast("Can't reach the Pi")}
+  }
+  async function flush(){
+    MS.timer=0;if(MS.busy){queue();return}
+    MS.busy=true;const p=MS.pend;MS.pend={};
+    if(p.play)await post({action:p.play});
+    if(p.vol!==undefined)await post({action:"volume",value:p.vol});
+    MS.busy=false;
+  }
+  async function pull(){
+    if(document.hidden||MS.busy||MS.timer||MS.drag||Date.now()-MS.local<3000)return;
+    try{
+      const r=await fetch("/api/media",{cache:"no-store",signal:tmo(5000)});
+      const d=await r.json();
+      if(MS.busy||MS.timer||MS.drag||Date.now()-MS.local<3000)return;
+      MD=Object.assign(d,{t:Date.now()});
+      MS.pulling=true;
+      if(d.active){S.play=!!d.playing;if(typeof d.volume==="number")S.vol=d.volume}
+      else S.play=false;
+      MS.play=S.play;MS.vol=S.vol;
+      paint();MS.pulling=false;
+    }catch(e){MS.pulling=false}
+  }
+  ST.addEventListener("click",e=>{
+    const b=e.target.closest('[data-a="pv"],[data-a="nx"]');if(!b||!live())return;
+    MS.local=Date.now();post({action:b.dataset.a==="nx"?"next":"previous"}).then(()=>{MS.local=0;setTimeout(pull,900)});
+  });
+  document.addEventListener("pointerdown",e=>{if(e.target.closest&&e.target.closest(".js-vl"))MS.drag=true},true);
+  const up=()=>{MS.drag=false};
+  document.addEventListener("pointerup",up,true);document.addEventListener("pointercancel",up,true);
+  document.addEventListener("visibilitychange",pull);
+  setInterval(pull,3000);pull();
 })();
 </script>
 <script>
