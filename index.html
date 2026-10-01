@@ -142,6 +142,10 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 <symbol id="i-grid" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></symbol>
+<symbol id="i-rain" viewBox="0 0 24 24"><path d="M17.5 15H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9zM8 19l-1 2M12 19l-1 2M16 19l-1 2"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M4 7l16 10M20 7 4 17"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
 <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
 <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7"/></symbol>
 <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/></symbol>
@@ -174,7 +178,7 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 <div class="chips" id="sug"></div>
 <div class="ar"><input id="ain" placeholder="Type or tap the mic" aria-label="Ask the assistant" autocomplete="off"><button class="mic" data-a="ml" aria-label="Speak"><svg class="i" style="width:22px;height:22px"><use href="#i-mic"/></svg></button><button class="mic" data-a="sd" aria-label="Send"><svg class="i" style="width:22px;height:22px"><use href="#i-send"/></svg></button></div>
 </section>
-<section class="amb" id="amb" aria-label="Screen saver"><div class="js-gr as2"></div><div class="big2 js-tm"></div><div class="bar" style="width:6cqw;height:.6cqw"></div><div class="as2 js-dt"></div><div class="as2">14° and partly cloudy</div></section>
+<section class="amb" id="amb" aria-label="Screen saver"><div class="js-gr as2"></div><div class="big2 js-tm"></div><div class="bar" style="width:6cqw;height:.6cqw"></div><div class="as2 js-dt"></div><div class="as2 js-ws"></div></section>
 <section class="alert" id="alert" aria-label="Alert"><div class="at" id="al-t"></div><div class="as2" id="al-s"></div><button class="stop" data-a="os">Stop</button><button class="chip" id="al-z" data-a="oz" style="font-size:max(14px,1.6cqw);padding:0 30px">Snooze 5 min</button></section>
 <div class="toast" id="toast"></div>
 <div class="dim" id="dim"></div>
@@ -185,6 +189,7 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const C=[["Warm white",38,80],["Coral",12,78],["Pink",335,70],["Violet",258,70],["Blue",215,78],["Teal",170,65]];
 const SC=[["Study",0,90],["Chill",3,45],["Sleep",1,10]];
 const CM=[["warm white",0],["warm",0],["white",0],["coral",1],["red",1],["orange",1],["pink",2],["violet",3],["purple",3],["blue",4],["teal",5],["green",5]];
+let WX=null;
 const S={on:true,c:3,b:60,sc:-1,play:true,mic:false,mode:"auto",vol:60,scr:100,dnd:false,pr:38,alarm:{h:6,m:30,on:true},timers:[],hist:[["ai","Hi, how can I help?"]]};
 const R=document.documentElement,P=$("#pgs"),ST=$("#st"),pages=$$(".g");
 const pad=n=>String(n).padStart(2,"0");
@@ -193,7 +198,7 @@ let uid=0,W=[["clock",0,1,1,7,8],["weather",0,8,1,5,3],["agenda",0,8,4,5,5],["li
 const I=n=>'<svg class="i"><use href="#i-'+n+'"/></svg>';
 const H={
 clock:()=>'<div class="in"><span class="gr js-gr"></span><div><div class="time js-tm"></div><div class="bar"></div><div class="dt js-dt"></div></div></div>',
-weather:()=>'<div class="in"><span style="color:var(--ac)">'+I("cloud")+'</span><div><div class="big">14°</div><div class="lb">Partly cloudy, high 16°</div></div></div>',
+weather:()=>'<div class="in"><span class="js-wi" style="color:var(--ac)">'+I("cloud")+'</span><div><div class="big js-wt">–°</div><div class="lb js-wl">Weather unavailable</div></div></div>',
 alarm:()=>'<div class="in"><div class="r sp"><span class="r h">'+I("alarm")+'Alarm</span><button class="tg js-at" role="switch" data-a="at" aria-label="Alarm on"><span></span></button></div><div class="r sp"><div><div class="big js-atm"></div><div class="lb js-al"></div></div><div class="r"><button class="chip" data-a="am" data-i="-15">−15</button><button class="chip" data-a="am" data-i="15">+15</button></div></div></div>',
 timer:()=>'<div class="in"><span class="r h">'+I("timer")+'Timers</span><div class="tl js-tl"></div><div class="chips"><button class="chip" data-a="ta" data-i="60">+1 min</button><button class="chip" data-a="ta" data-i="300">+5 min</button><button class="chip" data-a="ta" data-i="600">+10 min</button></div></div>',
 agenda:()=>'<div class="in"><span class="r h"><span style="color:var(--ac);display:flex">'+I("cal")+'</span>Today</span><div class="rows"><div class="ev"><b>09:00</b>Team call</div><div class="ev"><b>12:30</b>Lunch</div><div class="ev"><b>15:00</b>Groceries</div><div class="ev"><b>18:30</b>Gym</div></div></div>',
@@ -290,7 +295,7 @@ else if(/night mode|dark mode/.test(t)){S.mode="dark";r="Night mode on."}
 else if(/day mode|light mode/.test(t)){S.mode="light";r="Day mode on."}
 else if(/\btime\b/.test(t))r="It's "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".";
 else if(/\b(date|day is it|today)\b/.test(t))r="Today is "+new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})+".";
-else if(/weather|temperature/.test(t))r="It's 14° and partly cloudy, with a high of 16°.";
+else if(/weather|temperature/.test(t))r=WX?"It's "+WX.temp+"° and "+WX.desc.toLowerCase()+(WX.high!=null?", with a high of "+WX.high+"° and a low of "+WX.low+"°.":"."):"I don't have the weather yet. The Pi may be offline.";
 else r="I can control the light, timers, alarm, music and volume. Try “set a timer for 5 minutes”.";
 say("ai",r);paint()}
 const send=()=>{const v=$("#ain").value;$("#ain").value="";ask(v)};
@@ -411,6 +416,91 @@ if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
 if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").classList.contains("on"))amb(true)},1000);
 </script>
 <script>
+/* ===== Persistence: layout and settings saved in this browser (localStorage "roomhub:v1") =====
+   Saved: widget layout, theme mode, screen brightness, volume, do-not-disturb, alarm, running timers.
+   Not saved: the light's state (the bulb is the source of truth). Settings sheet has Export / Import / Reset. */
+(function(){
+  const KEY="roomhub:v1";
+  let resetting=false,last="";
+  const isInt=(n,a,b)=>Number.isInteger(n)&&n>=a&&n<=b;
+  const snap=()=>({v:1,
+    layout:W.map(w=>({id:w.id,t:w.t,p:w.p,x:w.x,y:w.y,w:w.w,h:w.h})),
+    settings:{mode:S.mode,scr:S.scr,vol:S.vol,dnd:S.dnd,alarm:{h:S.alarm.h,m:S.alarm.m,on:S.alarm.on},
+      timers:S.timers.map(t=>({id:t.id,label:t.label,end:t.end,total:t.total}))}});
+
+  function cleanLayout(list){
+    if(!Array.isArray(list))return null;
+    const out=[];
+    for(const o of list){
+      if(!o||!T[o.t]||!isInt(o.id,1,1e9)||!isInt(o.p,0,2)||!isInt(o.w,1,12)||!isInt(o.h,1,8)||!isInt(o.x,1,13-o.w)||!isInt(o.y,1,9-o.h))continue;
+      const n={id:o.id,t:o.t,p:o.p,x:o.x,y:o.y,w:o.w,h:o.h};
+      if(out.some(b=>b.id===n.id||hit(b,n)))continue;
+      out.push(n);
+    }
+    return out;
+  }
+  function applySettings(st){
+    if(!st||typeof st!=="object")return;
+    if(["auto","light","dark"].includes(st.mode))S.mode=st.mode;
+    if(isInt(st.scr,20,100))S.scr=st.scr;
+    if(isInt(st.vol,0,100))S.vol=st.vol;
+    if(typeof st.dnd==="boolean")S.dnd=st.dnd;
+    const a=st.alarm;
+    if(a&&isInt(a.h,0,23)&&isInt(a.m,0,59)&&typeof a.on==="boolean")S.alarm={h:a.h,m:a.m,on:a.on};
+    if(Array.isArray(st.timers))S.timers=st.timers.filter(t=>t&&isInt(t.id,1,1e9)&&typeof t.end==="number"&&t.end>Date.now()&&typeof t.total==="number"&&t.total>0)
+      .map(t=>({id:t.id,label:String(t.label||"Timer").slice(0,40),end:t.end,total:t.total}));
+  }
+  function apply(d){
+    if(!d||d.v!==1)return false;
+    const lay=cleanLayout(d.layout);
+    if(lay&&(lay.length||(Array.isArray(d.layout)&&!d.layout.length))){
+      W.forEach(w=>{if(w.el)w.el.remove()});
+      W=lay;uid=Math.max(uid,...W.map(w=>w.id),0);
+      W.forEach(place);
+    }
+    applySettings(d.settings);
+    S.timers.forEach(t=>{uid=Math.max(uid,t.id)});
+    paint();dots();
+    return true;
+  }
+  function save(force){
+    if(resetting)return;
+    try{const j=JSON.stringify(snap());if(force||j!==last){localStorage.setItem(KEY,j);last=j}}catch(e){}
+  }
+
+  try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(apply(d))last=JSON.stringify(snap())}}catch(e){}
+  if(!last)last=JSON.stringify(snap());
+  setInterval(()=>save(false),1500);
+  addEventListener("pagehide",()=>save(false));
+  document.addEventListener("visibilitychange",()=>{if(document.hidden)save(false)});
+
+  // Settings sheet: Export / Import / Reset
+  const card=document.createElement("div");card.className="card";
+  card.innerHTML='<div class="ql">Layout and settings</div><div class="chips"><button class="chip" data-rh="export">Export</button><button class="chip" data-rh="import">Import</button><button class="chip" data-rh="reset">Reset</button></div><input type="file" id="rh-file" accept="application/json,.json" hidden>';
+  $("#sq .sg").appendChild(card);
+  let armed=0;
+  ST.addEventListener("click",e=>{
+    const b=e.target.closest("[data-rh]");if(!b)return;
+    const k=b.dataset.rh;
+    if(k==="export"){
+      const url=URL.createObjectURL(new Blob([JSON.stringify(snap(),null,2)],{type:"application/json"}));
+      const a=document.createElement("a");a.href=url;a.download="roomhub-settings.json";document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);toast("Exported");
+    }else if(k==="import"){$("#rh-file").click()}
+    else if(k==="reset"){
+      if(!armed){b.textContent="Tap again to reset";armed=setTimeout(()=>{armed=0;b.textContent="Reset"},3000);return}
+      clearTimeout(armed);resetting=true;try{localStorage.removeItem(KEY)}catch(x){}location.reload();
+    }
+  });
+  $("#rh-file").addEventListener("change",e=>{
+    const f=e.target.files&&e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{let ok=false;try{ok=apply(JSON.parse(r.result))}catch(x){}if(ok){save(true);toast("Imported")}else toast("That file isn't a Room hub export")};
+    r.readAsText(f);e.target.value="";
+  });
+})();
+</script>
+<script>
 /* ===== Light bridge: keeps the Light widget in sync with the real bulb (Pi bridge, /api/light) =====
    - local taps are pushed to the bulb (debounced); the bulb is polled every 3 s and the UI follows it
    - if the bridge can't be reached (page opened from a laptop), the dashboard just works locally */
@@ -483,6 +573,35 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
   ST.addEventListener("click",e=>{if(e.target.closest('[data-a="sw"],[data-a="sc"],[data-a="tg"],[data-a="off"]'))LS.touch=true},true);
   document.addEventListener("visibilitychange",pull);
   setInterval(pull,3000);pull();
+})();
+</script>
+<script>
+/* ===== Weather: shown from the Pi bridge (/api/weather), which fetches Open-Meteo and caches it =====
+   Refreshes every 10 min and when the tablet wakes. If the bridge can't be reached, the last values stay on screen. */
+(function(){
+  const IC={clear:["sun","moon"],partly:["cloud","cloud"],cloud:["cloud","cloud"],fog:["cloud","cloud"],rain:["rain","rain"],snow:["snow","snow"],storm:["bolt","bolt"]};
+  const _paint=paint;
+  paint=function(){_paint();show()};
+  function show(){
+    const d=WX;
+    $$(".js-wt").forEach(e=>e.textContent=d?d.temp+"°":"–°");
+    $$(".js-wl").forEach(e=>e.textContent=d?d.desc+(d.high!=null?", high "+d.high+"°":""):"Weather unavailable");
+    $$(".js-ws").forEach(e=>e.textContent=d?d.temp+"° and "+d.desc.toLowerCase():"");
+    if(d){const ic=(IC[d.icon]||IC.cloud)[d.isDay===false?1:0];$$(".js-wi use").forEach(u=>u.setAttribute("href","#i-"+ic))}
+  }
+  async function pull(){
+    if(document.hidden)return;
+    try{
+      const ctl=typeof AbortController!=="undefined"?new AbortController():null;
+      if(ctl)setTimeout(()=>ctl.abort(),6000);
+      const r=await fetch("/api/weather",{cache:"no-store",signal:ctl?ctl.signal:undefined});
+      const d=await r.json();
+      if(d&&d.ok&&typeof d.temp==="number"){WX=d;show()}
+    }catch(e){/* keep what we have */}
+  }
+  document.addEventListener("visibilitychange",pull);
+  setInterval(pull,600000);
+  pull();setTimeout(pull,8000); /* second try in case the bridge was still fetching at startup */
 })();
 </script>
 <script>
