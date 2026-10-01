@@ -63,7 +63,7 @@ input[type=range]{width:100%;accent-color:var(--ac);height:32px;touch-action:pan
 .mt{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @container (max-height:300px){.art{display:none}}
 .trk{width:100%;height:1.6cqmin;min-height:4px;border-radius:9px;background:var(--s2)}
-.trk div{width:38%;height:100%;border-radius:9px;background:var(--ac)}
+.trk div{width:100%;height:100%;border-radius:9px;background:var(--ac);transform-origin:0 50%;transform:scaleX(.38)}
 .ctrl{display:flex;justify-content:center;align-items:center;gap:8cqmin}
 .ctrl .i{fill:currentColor}
 .pp{width:max(44px,16cqmin);height:max(44px,16cqmin);border-radius:50%;background:var(--ac);color:var(--on);display:flex;align-items:center;justify-content:center}
@@ -248,7 +248,6 @@ set(".js-sw button",e=>e.setAttribute("aria-pressed",S.on&&+e.dataset.i===S.c));
 set(".js-ch button",e=>e.setAttribute("aria-pressed",S.on&&+e.dataset.i===S.sc));
 set(".js-md",e=>e.setAttribute("aria-pressed",e.dataset.m===S.mode));
 set(".js-pp use",e=>e.setAttribute("href",S.play?"#i-pause":"#i-play"));
-set(".trk div",e=>e.style.width=S.pr+"%");
 set(".js-hist",e=>e.replaceChildren(...S.hist.slice(-4).map(x=>bub(x[0],x[1]))));
 const am=$("#am");am.replaceChildren(...S.hist.map(x=>bub(x[0],x[1])));am.scrollTop=am.scrollHeight;
 timers();
@@ -412,7 +411,7 @@ W.forEach(place);paint();dots();
 setInterval(()=>{
 const n=new Date();
 if(S.alarm.on&&n.getHours()===S.alarm.h&&n.getMinutes()===S.alarm.m){const k=n.toDateString()+S.alarm.h+S.alarm.m;if(lk!==k){lk=k;ring("Alarm",pad(S.alarm.h)+":"+pad(S.alarm.m))}}
-if(MD){if(MD.active&&MD.dur){S.pr=Math.min(100,(MD.pos+(S.play?Date.now()-MD.t:0))/MD.dur*100);$$(".trk div").forEach(e=>e.style.width=S.pr+"%")}}else if(S.play){S.pr=(S.pr+.4)%100;$$(".trk div").forEach(e=>e.style.width=S.pr+"%")}
+if(!MD&&S.play){S.pr=(S.pr+.4)%100;$$(".trk div").forEach(e=>e.style.transform="scaleX("+S.pr/100+")")}
 timers();
 if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
 if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").classList.contains("on"))amb(true)},1000);
@@ -637,7 +636,25 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
       if(url){const im=new Image();im.alt="";im.referrerPolicy="no-referrer";im.onerror=()=>{e.dataset.u="";e.innerHTML=I("note")};im.src=url;e.replaceChildren(im)}
       else e.innerHTML=I("note");
     });
-    if(!d.active)$$(".trk div").forEach(e=>e.style.width="0%");
+    bar();
+  }
+  /* Progress bar: the browser glides it to the end of the track at constant speed (transform only).
+     It is re-synced only when the track or play state changes, or it has drifted by more than 2 s. */
+  const BR={key:"",t0:0,p0:0,play:false};
+  function bar(){
+    const d=MD,els=$$(".trk div");
+    if(!d||!d.active||!d.dur){
+      if(BR.key!=="off"){BR.key="off";els.forEach(e=>{e.style.transition="none";e.style.transform="scaleX(0)"})}
+      return;
+    }
+    const now=Date.now(),key=d.title+"|"+d.dur+"|"+S.play,pos=d.pos+(S.play?now-d.t:0);
+    const exp=BR.t0?BR.p0+(BR.play?now-BR.t0:0):-1e9;
+    if(key===BR.key&&Math.abs(exp-pos)<2000)return;
+    BR.key=key;BR.t0=now;BR.p0=pos;BR.play=S.play;
+    els.forEach(e=>{
+      e.style.transition="none";e.style.transform="scaleX("+Math.max(0,Math.min(1,pos/d.dur))+")";void e.offsetWidth;
+      if(S.play&&pos<d.dur){e.style.transition="transform "+(d.dur-pos)+"ms linear";e.style.transform="scaleX(1)"}
+    });
   }
   function queue(){clearTimeout(MS.timer);MS.timer=setTimeout(flush,250);MS.local=Date.now()}
   async function post(body){
