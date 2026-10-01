@@ -417,7 +417,9 @@ if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
 if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").classList.contains("on"))amb(true)},1000);
 </script>
 <script>
-/* ===== Persistence: layout and settings saved in this browser (localStorage "roomhub:v1") =====
+/* ===== Persistence: layout and settings saved in this browser (localStorage "roomhub:v1") and on the Pi (/api/settings) =====
+   On load the newer of the two copies wins; changes are pushed to the Pi a moment after they happen.
+   If the Pi can't be reached, the browser copy keeps working and the push is retried every 15 s.
    Saved: widget layout, theme mode, screen brightness, volume, do-not-disturb, alarm, running timers.
    Not saved: the light's state (the bulb is the source of truth). Settings sheet has Export / Import / Reset. */
 (function(){
@@ -464,14 +466,42 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
     paint();dots();
     return true;
   }
+  const AT=KEY+":at";           /* when the browser copy was last changed */
+  let synced=false,piDirty=false,piBusy=false,piTry=0,pullTry=0;
+  const tmo=ms=>{if(typeof AbortController==="undefined")return undefined;const a=new AbortController();setTimeout(()=>a.abort(),ms);return a.signal};
+  const localAt=()=>{try{return +localStorage.getItem(AT)||0}catch(e){return 0}};
   function save(force){
     if(resetting)return;
-    try{const j=JSON.stringify(snap());if(force||j!==last){localStorage.setItem(KEY,j);last=j}}catch(e){}
+    try{const j=JSON.stringify(snap());if(force||j!==last){localStorage.setItem(KEY,j);localStorage.setItem(AT,Date.now());last=j;piDirty=true}}catch(e){}
+    pushPi();
+  }
+  async function pushPi(){
+    if(!piDirty||piBusy||resetting||!synced||Date.now()<piTry)return;
+    piBusy=true;
+    try{
+      const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({at:localAt(),data:JSON.parse(last)}),keepalive:true,signal:tmo(6000)});
+      if(r.ok)piDirty=false;else piTry=Date.now()+15000;
+    }catch(e){piTry=Date.now()+15000}
+    piBusy=false;
+  }
+  /* Ask the Pi for its copy. If it is newer than ours (or we have none), use it; if ours is newer, push ours. */
+  async function pullPi(){
+    try{
+      const r=await fetch("/api/settings",{cache:"no-store",signal:tmo(4000)});
+      const d=await r.json();
+      if(!d||d.ok!==true)return;
+      const at=+d.at||0;
+      if(d.data&&at>localAt()){
+        if(apply(d.data)){last=JSON.stringify(snap());try{localStorage.setItem(KEY,last);localStorage.setItem(AT,at)}catch(e){}piDirty=false}
+      }else if(localAt()>at)piDirty=true;
+      synced=true;pushPi();
+    }catch(e){/* Pi not reachable: try again later */}
   }
 
   try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(apply(d))last=JSON.stringify(snap())}}catch(e){}
   if(!last)last=JSON.stringify(snap());
-  setInterval(()=>save(false),1500);
+  const tick=()=>{save(false);if(!synced&&!resetting&&Date.now()>=pullTry){pullTry=Date.now()+15000;pullPi()}};
+  setInterval(tick,1500);tick();
   addEventListener("pagehide",()=>save(false));
   document.addEventListener("visibilitychange",()=>{if(document.hidden)save(false)});
 
@@ -490,7 +520,13 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
     }else if(k==="import"){$("#rh-file").click()}
     else if(k==="reset"){
       if(!armed){b.textContent="Tap again to reset";armed=setTimeout(()=>{armed=0;b.textContent="Reset"},3000);return}
-      clearTimeout(armed);resetting=true;try{localStorage.removeItem(KEY)}catch(x){}location.reload();
+      clearTimeout(armed);resetting=true;
+      (async()=>{
+        try{const r=await fetch("/api/settings",{method:"DELETE",signal:tmo(4000)});if(!r.ok)throw 0}
+        catch(x){if(synced){resetting=false;armed=0;b.textContent="Reset";return toast("Can't reach the Pi, so nothing was reset. Try again.")}}
+        try{localStorage.removeItem(KEY);localStorage.removeItem(AT)}catch(x){}
+        location.reload();
+      })();
     }
   });
   $("#rh-file").addEventListener("change",e=>{
