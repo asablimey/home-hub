@@ -218,7 +218,7 @@ const bub=(w,t)=>{const b=document.createElement("div");b.className="bub "+(w===
 const fmt=s=>s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s%3600/60))+":"+pad(s%60):Math.floor(s/60)+":"+pad(s%60);
 function paint(){
 let m=S.mode;if(m==="auto"){const h=new Date().getHours();m=h>=7&&h<19?"light":"dark"}
-const c=C[S.c],hu=S.on?c[1]:222,sa=S.on?c[2]:8,d=m==="dark",a=hu+" "+sa+"% "+(d?68:30)+"%",n=new Date(),hr=n.getHours(),al=S.alarm;
+const c=C[S.c],hu=S.on?(S.hu??c[1]):222,sa=S.on?(S.sa??c[2]):8,d=m==="dark",a=hu+" "+sa+"% "+(d?68:30)+"%",n=new Date(),hr=n.getHours(),al=S.alarm;
 R.dataset.theme=m;
 R.style.setProperty("--ac","hsl("+a+")");R.style.setProperty("--as","hsl("+a+" / "+(d?.16:.13)+")");R.style.setProperty("--bulb","hsl("+hu+" "+sa+"% 58%)");
 $("#dim").style.opacity=(100-S.scr)/125;
@@ -409,6 +409,81 @@ if(S.play){S.pr=(S.pr+.4)%100;$$(".trk div").forEach(e=>e.style.width=S.pr+"%")}
 timers();
 if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
 if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").classList.contains("on"))amb(true)},1000);
+</script>
+<script>
+/* ===== Light bridge: keeps the Light widget in sync with the real bulb (Pi bridge, /api/light) =====
+   - local taps are pushed to the bulb (debounced); the bulb is polled every 3 s and the UI follows it
+   - if the bridge can't be reached (page opened from a laptop), the dashboard just works locally */
+(function(){
+  const LS={sig:null,c:S.c,pulling:false,local:0,off:false,timer:0,busy:false,dirty:false,touch:false,drag:false};
+  const sigOf=()=>S.on+"|"+S.c+"|"+S.b;
+  LS.sig=sigOf();
+  const hd=(a,b)=>{const d=Math.abs(a-b)%360;return d>180?360-d:d};
+  const nearest=h=>{let bi=0,bd=999;C.forEach((c,i)=>{const d=hd(h,c[1]);if(d<bd){bd=d;bi=i}});return bi};
+  const tmo=ms=>{if(typeof AbortController==="undefined")return undefined;const a=new AbortController();setTimeout(()=>a.abort(),ms);return a.signal};
+
+  const _paint=paint;
+  paint=function(){
+    if(!LS.pulling){
+      const s=sigOf();
+      if(s!==LS.sig||LS.touch){
+        if(S.c!==LS.c||LS.touch){S.hu=S.sa=S.hs=S.ct=undefined;S.bm=S.c===0?"white":"colour"}
+        LS.sig=s;LS.c=S.c;LS.local=Date.now();schedule();
+      }
+    }
+    LS.touch=false;
+    _paint();
+    if(S.on&&S.hu!==undefined&&hd(S.hu,C[S.c][1])>20)$$(".js-cn").forEach(e=>e.textContent="Custom colour");
+    if(LS.off){$$(".js-bv").forEach(e=>e.textContent="Bulb offline");$$(".js-orb").forEach(e=>e.classList.add("off"))}
+  };
+
+  function body(){
+    if(!S.on)return{on:false};
+    const c=C[S.c],bm=S.bm||(S.c===0?"white":"colour");
+    if(bm==="white")return{on:true,mode:"white",colorTemp:S.ct??0,brightness:S.b};
+    return{on:true,mode:"colour",color:{h:S.hu??c[1],s:S.hs??c[2],v:S.b}};
+  }
+  function schedule(){clearTimeout(LS.timer);LS.timer=setTimeout(()=>{LS.timer=0;push()},250)}
+  function setOff(v){if(LS.off!==v){LS.off=v;paint()}}
+
+  async function push(){
+    if(LS.busy){LS.dirty=true;return}
+    LS.busy=true;
+    try{
+      const r=await fetch("/api/light",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body()),signal:tmo(8000)});
+      let d={};try{d=await r.json()}catch(e){}
+      setOff(r.status===502||d.online===false);
+    }catch(e){/* bridge unreachable: stay local */}
+    LS.busy=false;
+    if(LS.dirty){LS.dirty=false;schedule()}
+  }
+
+  async function pull(){
+    if(document.hidden||LS.busy||LS.timer||LS.drag||Date.now()-LS.local<3000)return;
+    try{
+      const r=await fetch("/api/light",{cache:"no-store",signal:tmo(4000)});
+      const d=await r.json();
+      if(LS.busy||LS.timer||LS.drag||Date.now()-LS.local<3000)return;
+      if(d.online===false){setOff(true);return}
+      LS.pulling=true;LS.off=false;
+      const white=d.mode==="white"||d.color.s<12;
+      S.on=!!d.on;S.b=Math.max(5,Math.round(d.brightness)||5);S.bm=white?"white":"colour";
+      if(white){S.c=0;S.hu=S.sa=S.hs=undefined;S.ct=d.colorTemp}
+      else{S.c=nearest(d.color.h);S.hu=d.color.h;S.hs=d.color.s;S.sa=Math.min(85,Math.max(45,d.color.s));S.ct=undefined}
+      S.sc=SC.findIndex(x=>x[1]===S.c&&x[2]===S.b);
+      LS.sig=sigOf();LS.c=S.c;
+      paint();
+      LS.pulling=false;
+    }catch(e){LS.pulling=false}
+  }
+
+  document.addEventListener("pointerdown",e=>{if(e.target.closest&&e.target.closest(".js-br"))LS.drag=true},true);
+  const up=()=>{LS.drag=false};
+  document.addEventListener("pointerup",up,true);document.addEventListener("pointercancel",up,true);
+  ST.addEventListener("click",e=>{if(e.target.closest('[data-a="sw"],[data-a="sc"],[data-a="tg"],[data-a="off"]'))LS.touch=true},true);
+  document.addEventListener("visibilitychange",pull);
+  setInterval(pull,3000);pull();
+})();
 </script>
 <script>
 (function(){
