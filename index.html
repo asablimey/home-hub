@@ -2,8 +2,6 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Room hub main display</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..600&display=swap" rel="stylesheet">
 <style>
 :root{--page:hsl(210 14% 84%);--bg:hsl(210 18% 94%);--s1:#fff;--s2:hsl(210 16% 89%);--tx:hsl(222 25% 12%);--mu:hsl(220 8% 38%);--ln:hsl(222 25% 15% / .1);--on:#fff;--ac:hsl(258 70% 30%);--as:hsl(258 70% 30% / .13);--bulb:hsl(258 70% 58%);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:hsl(222 14% 4%);--bg:hsl(222 12% 8%);--s1:hsl(222 11% 12%);--s2:hsl(222 10% 18%);--tx:hsl(220 20% 94%);--mu:hsl(220 8% 66%);--ln:hsl(220 20% 90% / .09);--on:hsl(222 20% 6%)}}
@@ -11,7 +9,7 @@
 html,body{height:100%;overflow:hidden}
 html{scroll-padding-top:env(safe-area-inset-top,0px);overscroll-behavior:none}
 *{box-sizing:border-box;margin:0}
-body{background:var(--page);color:var(--tx);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:background .6s;overscroll-behavior:none}
+body{background:var(--page);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;transition:background .6s;overscroll-behavior:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .wrap{height:100%}
 .stage{container-type:inline-size;position:relative;height:100%;background:var(--bg);overflow:hidden;transition:background .6s;touch-action:pan-x}
@@ -129,6 +127,27 @@ input[type=range]{width:100%;accent-color:var(--ac);height:32px;touch-action:pan
 .stop{min-height:56px;padding:0 40px;border-radius:99px;background:var(--ac);color:var(--on);font-size:max(16px,1.9cqw)}
 .dim{position:absolute;inset:0;background:#000;pointer-events:none;z-index:99;opacity:0}
 button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.t{border:0;border-radius:2.2cqw}
+.in{padding:7cqmin}
+.h{font-size:clamp(13px,4.8cqmin,20px);color:var(--mu);font-weight:500}
+.lb{font-size:clamp(11px,4.4cqmin,16px)}
+.big{font-size:max(22px,30cqmin)}
+.orb.off{background:transparent;box-shadow:inset 0 0 0 2px var(--ln)}
+.fab{background:var(--s1);color:var(--mu);border:1px solid var(--ln)}
+.lt{position:absolute;inset:0;z-index:40;background:var(--bg);display:none;flex-direction:column;gap:2cqw;padding:2.4cqw}
+.lt.on{display:flex}
+.lbody{flex:1;display:flex;gap:5cqw;align-items:center;min-height:0}
+.wheel{position:relative;height:100%;aspect-ratio:1;flex:none}
+.wheel canvas{width:100%;height:100%;border-radius:50%;touch-action:none;display:block}
+.wm{position:absolute;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.45);transform:translate(-50%,-50%);pointer-events:none}
+.lside{flex:1;display:flex;flex-direction:column;gap:1.6cqw}
+.lside .lb{font-size:max(13px,1.4cqw)}
+.xpb{flex:1;overflow:auto;display:flex;flex-direction:column;gap:1.2cqw;font-size:max(16px,1.9cqw)}
+.xbig{font-size:12cqw;font-weight:300;line-height:1}
+.xs{color:var(--mu)}
+.xh{color:var(--mu);font-size:max(13px,1.4cqw);margin-top:1.2cqw}
+.xpb .ev{font-size:max(16px,1.9cqw)}
+.xpb .ev b{min-width:9ch}
 </style></head><body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></symbol>
@@ -180,6 +199,10 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 <div class="chips" id="sug"></div>
 <div class="ar"><input id="ain" placeholder="Type or tap the mic" aria-label="Ask the assistant" autocomplete="off"><button class="mic" data-a="ml" aria-label="Speak"><svg class="i" style="width:22px;height:22px"><use href="#i-mic"/></svg></button><button class="mic" data-a="sd" aria-label="Send"><svg class="i" style="width:22px;height:22px"><use href="#i-send"/></svg></button></div>
 </section>
+<section class="lt" id="lt" aria-label="Light controls"><div class="sh"><span class="sht">Bedside light</span><div class="r" style="gap:16px"><button class="tg js-tg" role="switch" data-a="tg" aria-label="Light power"><span></span></button><button class="chip" data-a="lx" style="padding:0 20px">Done</button></div></div>
+<div class="lbody"><div class="wheel"><canvas id="wh" width="360" height="360"></canvas><i class="wm" id="wm"></i></div>
+<div class="lside"><div class="lb">Brightness</div><input class="js-br" type="range" min="5" max="100" aria-label="Brightness"><div class="lb">Warm to cool white</div><input id="ctr" type="range" min="0" max="100" aria-label="White temperature"><div class="lb">Scenes</div><div class="chips js-ch"></div></div></div></section>
+<section class="lt" id="xp" aria-label="Details"><div class="sh"><span class="sht" id="xp-t"></span><button class="chip" data-a="xx" style="padding:0 20px">Done</button></div><div class="xpb" id="xp-b"></div></section>
 <section class="amb" id="amb" aria-label="Screen saver"><div class="js-gr as2"></div><div class="big2 js-tm"></div><div class="bar" style="width:6cqw;height:.6cqw"></div><div class="as2 js-dt"></div><div class="as2 js-ws"></div></section>
 <section class="alert" id="alert" aria-label="Alert"><div class="at" id="al-t"></div><div class="as2" id="al-s"></div><button class="stop" data-a="os">Stop</button><button class="chip" id="al-z" data-a="oz" style="font-size:max(14px,1.6cqw);padding:0 30px">Snooze 5 min</button></section>
 <div class="toast" id="toast"></div>
@@ -189,21 +212,21 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 <script>
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const C=[["Warm white",38,80],["Coral",12,78],["Pink",335,70],["Violet",258,70],["Blue",215,78],["Teal",170,65]];
-const SC=[["Study",0,90],["Chill",3,45],["Sleep",1,10]];
+const SC=[["Study",0,90],["Chill",3,45],["Sleep",1,10],["Reading",0,70],["Movie",1,25],["Night",1,5]];
 const CM=[["warm white",0],["warm",0],["white",0],["coral",1],["red",1],["orange",1],["pink",2],["violet",3],["purple",3],["blue",4],["teal",5],["green",5]];
 let WX=null,MD=null,PI=false;   /* PI: timers and alarm are owned by the Pi bridge */
 const S={on:true,c:3,b:60,sc:-1,play:true,mic:false,mode:"auto",vol:60,scr:100,dnd:false,pr:38,alarm:{h:6,m:30,on:true},timers:[],hist:[["ai","Hi, how can I help?"]]};
 const R=document.documentElement,P=$("#pgs"),ST=$("#st"),pages=$$(".g");
 const pad=n=>String(n).padStart(2,"0");
-const T={clock:{n:"Clock",sz:[[4,3],[5,4],[7,8]]},weather:{n:"Weather",sz:[[3,2],[5,3]]},alarm:{n:"Alarm",sz:[[5,3],[5,4]]},timer:{n:"Timers",sz:[[5,3],[5,4]]},agenda:{n:"Today",sz:[[4,4],[5,5]]},light:{n:"Bedside light",sz:[[4,3],[5,4],[7,8]]},scenes:{n:"Scenes",sz:[[5,2],[5,4]]},media:{n:"Media",sz:[[4,3],[6,8]]},assistant:{n:"Assistant",sz:[[5,4],[6,8]]}};
-let uid=0,W=[["clock",0,1,1,7,8],["weather",0,8,1,5,3],["agenda",0,8,4,5,5],["light",1,1,1,7,8],["scenes",1,8,1,5,2],["alarm",1,8,3,5,3],["timer",1,8,6,5,3],["media",2,1,1,6,8],["assistant",2,7,1,6,8]].map(a=>({id:++uid,t:a[0],p:a[1],x:a[2],y:a[3],w:a[4],h:a[5]}));
+const T={clock:{n:"Clock",sz:[[4,3],[5,4],[7,8]]},weather:{n:"Weather",sz:[[3,2],[5,3],[5,4]]},alarm:{n:"Alarm",sz:[[5,3],[5,4]]},timer:{n:"Timers",sz:[[5,3],[5,4]]},agenda:{n:"Today",sz:[[4,4],[5,5]]},light:{n:"Bedside light",sz:[[4,3],[5,4],[7,8]]},scenes:{n:"Scenes",sz:[[5,2],[5,4]]},media:{n:"Media",sz:[[4,3],[6,8]]},assistant:{n:"Assistant",sz:[[5,4],[6,8]]}};
+let uid=0,W=[["clock",0,1,1,7,8],["weather",0,8,1,5,3],["agenda",0,8,4,5,5],["light",1,1,1,7,8],["alarm",1,8,1,5,3],["timer",1,8,4,5,3],["scenes",1,8,7,5,2],["media",2,1,1,6,8],["assistant",2,7,1,6,8]].map(a=>({id:++uid,t:a[0],p:a[1],x:a[2],y:a[3],w:a[4],h:a[5]}));
 const I=n=>'<svg class="i"><use href="#i-'+n+'"/></svg>';
 const H={
 clock:()=>'<div class="in"><span class="gr js-gr"></span><div><div class="time js-tm"></div><div class="bar"></div><div class="dt js-dt"></div></div></div>',
 weather:()=>'<div class="in"><span class="js-wi" style="color:var(--ac)">'+I("cloud")+'</span><div><div class="big js-wt">–°</div><div class="lb js-wl">Weather unavailable</div></div></div>',
 alarm:()=>'<div class="in"><div class="r sp"><span class="r h">'+I("alarm")+'Alarm</span><button class="tg js-at" role="switch" data-a="at" aria-label="Alarm on"><span></span></button></div><div class="r sp"><div><div class="big js-atm"></div><div class="lb js-al"></div></div><div class="r"><button class="chip" data-a="am" data-i="-15">−15</button><button class="chip" data-a="am" data-i="15">+15</button></div></div></div>',
 timer:()=>'<div class="in"><span class="r h">'+I("timer")+'Timers</span><div class="tl js-tl"></div><div class="chips"><button class="chip" data-a="ta" data-i="60">+1 min</button><button class="chip" data-a="ta" data-i="300">+5 min</button><button class="chip" data-a="ta" data-i="600">+10 min</button></div></div>',
-agenda:()=>'<div class="in"><span class="r h"><span style="color:var(--ac);display:flex">'+I("cal")+'</span>Today</span><div class="rows"><div class="ev"><b>09:00</b>Team call</div><div class="ev"><b>12:30</b>Lunch</div><div class="ev"><b>15:00</b>Groceries</div><div class="ev"><b>18:30</b>Gym</div></div></div>',
+agenda:()=>'<div class="in"><span class="r h"><span style="color:var(--ac);display:flex">'+I("cal")+'</span>Today</span><div class="rows js-ev"><div class="none">No calendar connected yet</div></div></div>',
 light:()=>'<div class="in"><div class="r sp"><span class="r h">'+I("bulb")+'Bedside light</span><button class="tg js-tg" role="switch" data-a="tg" aria-label="Light power"><span></span></button></div><div class="r" style="gap:6cqmin"><div class="orb js-orb"></div><div><div class="big js-cn" style="font-size:max(18px,14cqmin)"></div><div class="lb js-bv"></div></div></div><input class="js-br" type="range" min="5" max="100" aria-label="Brightness"><div class="sw js-sw"></div></div>',
 scenes:()=>'<div class="in"><span class="h">Scenes</span><div class="chips js-ch"></div></div>',
 media:()=>'<div class="in" style="align-items:center;text-align:center"><div class="art">'+I("note")+'</div><div style="max-width:100%"><div class="h mt js-mt">Late night mix</div><div class="lb mt js-ma">Demo, not connected</div></div><div class="trk"><div></div></div><div class="ctrl"><button data-a="pv" aria-label="Previous">'+I("back")+'</button><button class="pp js-pp" data-a="pp" aria-label="Play or pause">'+I("pause")+'</button><button data-a="nx" aria-label="Next">'+I("fwd")+'</button></div></div>',
@@ -243,7 +266,7 @@ set(".js-br",e=>e.value=S.b);set(".js-scr",e=>e.value=S.scr);set(".js-vl",e=>e.v
 set(".js-vol",e=>e.textContent="Volume "+S.vol+"%");
 set(".js-orb",e=>{e.classList.toggle("off",!S.on);e.style.opacity=.35+S.b/100*.65});
 set(".js-cn",e=>e.textContent=S.on?c[0]:"Off");
-set(".js-bv",e=>e.textContent=S.on?S.b+"% brightness":"Off");
+set(".js-bv",e=>e.textContent=S.on?S.b+"% brightness":"Light is off");
 set(".js-sw button",e=>e.setAttribute("aria-pressed",S.on&&+e.dataset.i===S.c));
 set(".js-ch button",e=>e.setAttribute("aria-pressed",S.on&&+e.dataset.i===S.sc));
 set(".js-md",e=>e.setAttribute("aria-pressed",e.dataset.m===S.mode));
@@ -562,6 +585,7 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
     _paint();
     if(S.on&&S.hu!==undefined&&hd(S.hu,C[S.c][1])>20)$$(".js-cn").forEach(e=>e.textContent="Custom colour");
     if(LS.off){$$(".js-bv").forEach(e=>e.textContent="Bulb offline");$$(".js-orb").forEach(e=>e.classList.add("off"))}
+    syncLt();
   };
 
   function body(){
@@ -571,6 +595,49 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
     return{on:true,mode:"colour",color:{h:S.hu??c[1],s:S.hs??c[2],v:S.b}};
   }
   function schedule(){clearTimeout(LS.timer);LS.timer=setTimeout(()=>{LS.timer=0;push()},250)}
+  /* Light panel: colour wheel, white temperature, tap-to-open */
+  window.setLight=function(p){
+    Object.assign(S,p);S.on=true;S.sc=-1;LS.sig=sigOf();LS.c=S.c;LS.local=Date.now();
+    if(!LS.timer)LS.timer=setTimeout(()=>{LS.timer=0;push()},150);   /* throttled: updates the bulb while dragging */
+    LS.pulling=true;paint();LS.pulling=false;
+  };
+  function syncLt(){
+    const m=$("#wm"),w=S.bm==="white"||(S.bm===undefined&&S.c===0);
+    m.style.display=S.on&&!w?"block":"none";
+    const h=(S.hu??C[S.c][1])*Math.PI/180,s=(S.hs??C[S.c][2])/100;
+    m.style.left=50+s*50*Math.cos(h)+"%";m.style.top=50-s*50*Math.sin(h)+"%";
+    if(!LS.drag)$("#ctr").value=S.ct??50;
+  }
+  let drawn=false;
+  function drawWheel(){
+    const c=$("#wh"),x=c.getContext("2d"),n=360,R=n/2,d=x.createImageData(n,n);
+    for(let py=0;py<n;py++)for(let px=0;px<n;px++){
+      const dx=px+.5-R,dy=R-py-.5,s=Math.hypot(dx,dy)/R;if(s>1)continue;
+      let h=Math.atan2(dy,dx)*180/Math.PI;if(h<0)h+=360;
+      const f=k=>{const t=(k+h/60)%6;return 255*(1-s*Math.max(0,Math.min(t,4-t,1)))},i=(py*n+px)*4;
+      d.data[i]=f(5);d.data[i+1]=f(3);d.data[i+2]=f(1);d.data[i+3]=255}
+    x.putImageData(d,0,0);
+  }
+  const wh=$("#wh");let wd=false;
+  const pick=e=>{
+    const r=wh.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=r.height/2-(e.clientY-r.top);
+    let h=Math.atan2(y,x)*180/Math.PI;if(h<0)h+=360;
+    const s=Math.max(10,Math.min(100,Math.hypot(x,y)/(r.width/2)*100));
+    setLight({bm:"colour",hu:Math.round(h),hs:Math.round(s),sa:Math.min(85,Math.max(45,Math.round(s))),ct:undefined,c:nearest(h)});
+  };
+  wh.addEventListener("pointerdown",e=>{wd=true;wh.setPointerCapture(e.pointerId);pick(e)});
+  wh.addEventListener("pointermove",e=>{if(wd)pick(e)});
+  const wend=()=>{wd=false};wh.addEventListener("pointerup",wend);wh.addEventListener("pointercancel",wend);
+  $("#ctr").addEventListener("input",e=>setLight({bm:"white",c:0,ct:+e.target.value,hu:undefined,hs:undefined,sa:undefined}));
+  fill($("#lt"));
+  ST.addEventListener("click",e=>{
+    const t=e.target;
+    if(t.closest('[data-a="lx"]'))return $("#lt").classList.remove("on");
+    if(t.closest('.t[aria-label="Bedside light"]')&&!L&&!t.closest("button,input,.ov,[data-a]")){
+      if(!drawn){drawn=true;drawWheel()}
+      $("#lt").classList.add("on");syncLt();
+    }
+  });
   function setOff(v){if(LS.off!==v){LS.off=v;paint()}}
 
   async function push(){
@@ -785,6 +852,73 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
   };
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()});
   setInterval(pull,3000);pull();
+})();
+</script>
+<script>
+/* ===== Calendar: events come from the Pi (/api/calendar). Tap "Today" or "Weather" for the full view. ===== */
+(function(){
+  let CAL=null;
+  const sod=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()),hm=d=>pad(d.getHours())+":"+pad(d.getMinutes());
+  const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};   /* textContent only: event titles are never parsed as HTML */
+  const row=(time,title)=>{const r=mk("div","ev"),b=mk("b","",time);r.append(b,document.createTextNode(title));return r};
+  const dl=d=>{const n=Math.round((sod(d)-sod(new Date()))/864e5);return n===0?"Today":n===1?"Tomorrow":d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})};
+  function evs(){
+    if(!CAL)return[];
+    return CAL.events.map(e=>{
+      if(e.allDay){const a=e.start.split("-"),b=e.end.split("-");return{t0:new Date(+a[0],a[1]-1,+a[2]),t1:new Date(+b[0],b[1]-1,+b[2]),allDay:true,title:e.title}}
+      return{t0:new Date(e.start),t1:new Date(e.end),allDay:false,title:e.title}});
+  }
+  function widgetRows(){
+    if(!CAL||!CAL.configured)return[mk("div","none","No calendar connected yet")];
+    if(CAL.error&&!CAL.events.length)return[mk("div","none","Calendar unavailable")];
+    const now=new Date(),eod=new Date(sod(now).getTime()+864e5),all=evs();
+    const today=all.filter(e=>e.t0<eod&&e.t1>now);
+    if(today.length)return today.slice(0,6).map(e=>row(e.allDay?"All day":hm(e.t0),e.title));
+    const nx=all.find(e=>e.t0>=eod),out=[mk("div","none","Nothing else today")];
+    if(nx)out.push(row(dl(nx.t0),(nx.allDay?"":hm(nx.t0)+"  ")+nx.title));
+    return out;
+  }
+  function show(){
+    $$(".js-ev").forEach(c=>{
+      const k=widgetRows(),key=k.map(x=>x.textContent).join("|");
+      if(c.dataset.k!==key){c.dataset.k=key;c.replaceChildren(...k)}
+    });
+  }
+  const _paint=paint;paint=function(){_paint();show()};
+  async function pull(){
+    if(document.hidden)return;
+    try{const r=await fetch("/api/calendar",{cache:"no-store"});const d=await r.json();if(d&&d.ok){CAL=d;show()}}catch(e){}
+  }
+  function openXp(kind){
+    const b=$("#xp-b");b.replaceChildren();
+    if(kind==="Weather"){
+      $("#xp-t").textContent=WX?WX.place:"Weather";
+      if(!WX)b.append(mk("div","none","Weather unavailable"));
+      else{
+        b.append(mk("div","xbig",WX.temp+"°"),mk("div","xs",WX.desc+(WX.high!=null?", high "+WX.high+"°, low "+WX.low+"°":"")),mk("div","xh","Next days"));
+        (WX.days||[]).forEach((d,i)=>b.append(row(i===0?"Today":new Date(d.date+"T12:00").toLocaleDateString(undefined,{weekday:"short"}),d.desc+"   "+d.high+"° / "+d.low+"°")));
+      }
+    }else{
+      $("#xp-t").textContent="Coming up";
+      const all=evs();let any=false;
+      for(let i=0;i<7;i++){
+        const a=new Date(sod(new Date()).getTime()+i*864e5),z=new Date(a.getTime()+864e5);
+        const list=all.filter(e=>e.t0<z&&e.t1>a&&(i>0||e.t1>new Date()));
+        if(!list.length)continue;any=true;
+        b.append(mk("div","xh",dl(a)));list.forEach(e=>b.append(row(e.allDay?"All day":hm(e.t0),e.title)));
+      }
+      if(!any)b.append(mk("div","none",!CAL||!CAL.configured?"No calendar connected yet":"Nothing in the next 7 days"));
+    }
+    $("#xp").classList.add("on");
+  }
+  ST.addEventListener("click",e=>{
+    const t=e.target;
+    if(t.closest('[data-a="xx"]'))return $("#xp").classList.remove("on");
+    const w=t.closest('.t[aria-label="Today"],.t[aria-label="Weather"]');
+    if(w&&!L&&!t.closest("button,input,.ov,[data-a]"))openXp(w.getAttribute("aria-label"));
+  });
+  document.addEventListener("visibilitychange",pull);
+  setInterval(pull,300000);pull();
 })();
 </script>
 <script>
