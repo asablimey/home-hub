@@ -191,7 +191,7 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const C=[["Warm white",38,80],["Coral",12,78],["Pink",335,70],["Violet",258,70],["Blue",215,78],["Teal",170,65]];
 const SC=[["Study",0,90],["Chill",3,45],["Sleep",1,10]];
 const CM=[["warm white",0],["warm",0],["white",0],["coral",1],["red",1],["orange",1],["pink",2],["violet",3],["purple",3],["blue",4],["teal",5],["green",5]];
-let WX=null,MD=null;
+let WX=null,MD=null,PI=false;   /* PI: timers and alarm are owned by the Pi bridge */
 const S={on:true,c:3,b:60,sc:-1,play:true,mic:false,mode:"auto",vol:60,scr:100,dnd:false,pr:38,alarm:{h:6,m:30,on:true},timers:[],hist:[["ai","Hi, how can I help?"]]};
 const R=document.documentElement,P=$("#pgs"),ST=$("#st"),pages=$$(".g");
 const pad=n=>String(n).padStart(2,"0");
@@ -252,10 +252,10 @@ set(".js-hist",e=>e.replaceChildren(...S.hist.slice(-4).map(x=>bub(x[0],x[1]))))
 const am=$("#am");am.replaceChildren(...S.hist.map(x=>bub(x[0],x[1])));am.scrollTop=am.scrollHeight;
 timers();
 }
-const addTimer=(s,l)=>S.timers.push({id:++uid,label:l||"Timer",end:Date.now()+s*1000,total:s});
+const addTimer=(s,l)=>PI?TPI({op:"add",seconds:s,label:l||"Timer"}):S.timers.push({id:++uid,label:l||"Timer",end:Date.now()+s*1000,total:s});
 function timers(){
 const now=Date.now();
-S.timers.filter(x=>x.end<=now).forEach(x=>ring("Timer done",x.label));
+S.timers.filter(x=>x.end<=now).forEach(x=>{if(PI)TSOON();else ring("Timer done",x.label)});
 S.timers=S.timers.filter(x=>x.end>now);
 $$(".js-tl").forEach(c=>{
 const k=S.timers.map(x=>x.id).join();
@@ -273,7 +273,7 @@ function ask(q){
 q=q.trim();if(!q)return;say("me",q);
 const t=q.toLowerCase(),col=CM.find(x=>t.includes(x[0])),light=/\b(lights?|lamp|bulb)\b/.test(t),scn=/sleep|good night|bedtime/.test(t)?2:/chill|relax/.test(t)?1:/study|focus/.test(t)?0:-1;
 let r="";
-if(/\btimers?\b/.test(t)&&/\b(cancel|stop|clear|delete|remove)\b/.test(t)){S.timers=[];r="Timers cleared."}
+if(/\btimers?\b/.test(t)&&/\b(cancel|stop|clear|delete|remove)\b/.test(t)){if(PI)TPI({op:"clear"});else S.timers=[];r="Timers cleared."}
 else if(/\btimer\b/.test(t)){const s=secs(t);if(s){addTimer(s);r="Timer set for "+dur(s)+"."}else r="How long? Try “set a timer for 5 minutes”."}
 else if(/\balarm\b/.test(t)){const m=t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
 if(/\b(off|cancel|stop|delete)\b/.test(t)){S.alarm.on=false;r="Alarm off."}
@@ -383,11 +383,11 @@ else if(a==="pp")S.play=!S.play;
 else if(a==="at")S.alarm.on=!S.alarm.on;
 else if(a==="am"){let n=(S.alarm.h*60+S.alarm.m+i+1440)%1440;S.alarm.h=Math.floor(n/60);S.alarm.m=n%60;S.alarm.on=true}
 else if(a==="ta")addTimer(i);
-else if(a==="tx")S.timers=S.timers.filter(x=>x.id!==i);
+else if(a==="tx"){if(PI)TPI({op:"cancel",id:i});else S.timers=S.timers.filter(x=>x.id!==i)}
 else if(a==="dnd")S.dnd=!S.dnd;
 else if(a==="md")S.mode=b.dataset.m;
-else if(a==="oz"){stopRing();addTimer(300,"Snooze")}
-else if(a==="os")stopRing();
+else if(a==="oz"){stopRing();if(PI)TPI({op:"snooze",seconds:300});else addTimer(300,"Snooze")}
+else if(a==="os"){stopRing();if(PI)TPI({op:"stop"})}
 else if(a==="ao")return openAsst();
 else if(a==="ax")return $("#asst").classList.remove("on");
 else if(a==="sg")return ask(b.textContent);
@@ -410,7 +410,7 @@ fill($("#sq"));fill($("#sb"));
 W.forEach(place);paint();dots();
 setInterval(()=>{
 const n=new Date();
-if(S.alarm.on&&n.getHours()===S.alarm.h&&n.getMinutes()===S.alarm.m){const k=n.toDateString()+S.alarm.h+S.alarm.m;if(lk!==k){lk=k;ring("Alarm",pad(S.alarm.h)+":"+pad(S.alarm.m))}}
+if(!PI&&S.alarm.on&&n.getHours()===S.alarm.h&&n.getMinutes()===S.alarm.m){const k=n.toDateString()+S.alarm.h+S.alarm.m;if(lk!==k){lk=k;ring("Alarm",pad(S.alarm.h)+":"+pad(S.alarm.m))}}
 if(!MD&&S.play){S.pr=(S.pr+.4)%100;$$(".trk div").forEach(e=>e.style.transform="scaleX("+S.pr/100+")")}
 timers();
 if(n.getMinutes()!==lm){lm=n.getMinutes();paint()}
@@ -428,8 +428,8 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
   const isInt=(n,a,b)=>Number.isInteger(n)&&n>=a&&n<=b;
   const snap=()=>({v:1,
     layout:W.map(w=>({id:w.id,t:w.t,p:w.p,x:w.x,y:w.y,w:w.w,h:w.h})),
-    settings:{mode:S.mode,scr:S.scr,vol:S.vol,dnd:S.dnd,alarm:{h:S.alarm.h,m:S.alarm.m,on:S.alarm.on},
-      timers:S.timers.map(t=>({id:t.id,label:t.label,end:t.end,total:t.total}))}});
+    settings:Object.assign({mode:S.mode,scr:S.scr,vol:S.vol,dnd:S.dnd},PI?{}:{alarm:{h:S.alarm.h,m:S.alarm.m,on:S.alarm.on},
+      timers:S.timers.map(t=>({id:t.id,label:t.label,end:t.end,total:t.total}))})});
 
   function cleanLayout(list){
     if(!Array.isArray(list))return null;
@@ -449,8 +449,8 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
     if(isInt(st.vol,0,100))S.vol=st.vol;
     if(typeof st.dnd==="boolean")S.dnd=st.dnd;
     const a=st.alarm;
-    if(a&&isInt(a.h,0,23)&&isInt(a.m,0,59)&&typeof a.on==="boolean")S.alarm={h:a.h,m:a.m,on:a.on};
-    if(Array.isArray(st.timers))S.timers=st.timers.filter(t=>t&&isInt(t.id,1,1e9)&&typeof t.end==="number"&&t.end>Date.now()&&typeof t.total==="number"&&t.total>0)
+    if(!PI&&a&&isInt(a.h,0,23)&&isInt(a.m,0,59)&&typeof a.on==="boolean")S.alarm={h:a.h,m:a.m,on:a.on};
+    if(!PI&&Array.isArray(st.timers))S.timers=st.timers.filter(t=>t&&isInt(t.id,1,1e9)&&typeof t.end==="number"&&t.end>Date.now()&&typeof t.total==="number"&&t.total>0)
       .map(t=>({id:t.id,label:String(t.label||"Timer").slice(0,40),end:t.end,total:t.total}));
   }
   function apply(d){
@@ -729,6 +729,61 @@ if(Date.now()-idle>60000&&!$("#amb").classList.contains("on")&&!$("#alert").clas
   const up=()=>{MS.drag=false};
   document.addEventListener("pointerup",up,true);document.addEventListener("pointercancel",up,true);
   document.addEventListener("visibilitychange",pull);
+  setInterval(pull,3000);pull();
+})();
+</script>
+<script>
+/* ===== Timers and alarm: owned by the Pi bridge (/api/timers) =====
+   The Pi keeps the timers and the alarm running, and holds an alert "ringing" until Stop or Snooze is pressed.
+   This page shows them, sounds the alert, and sends changes to the Pi. A reload, a sleeping screen or a second
+   screen therefore can't lose or miss one: the alert appears as soon as the page is awake.
+   If the Pi can't be reached for ~10 s the page falls back to running timers and the alarm on its own. */
+(function(){
+  const tmo=ms=>{if(typeof AbortController==="undefined")return undefined;const a=new AbortController();setTimeout(()=>a.abort(),ms);return a.signal};
+  const aSig=()=>S.alarm.h+":"+S.alarm.m+":"+S.alarm.on;
+  let sigA=null,alarmTimer=0,alarmPending=false,pulling=false,rk=0,fails=0,soon=0;
+
+  function apply(d){
+    const off=d.now-Date.now();                      /* Pi clock minus this tablet's clock */
+    S.timers=d.timers.map(t=>({id:t.id,label:t.label,end:t.end-off,total:t.total}));
+    if(d.alarm&&!alarmPending){S.alarm={h:d.alarm.h,m:d.alarm.m,on:d.alarm.on};sigA=aSig()}
+    else if(!d.alarm)sigA=null;                       /* Pi has no alarm yet: send ours */
+    const r=d.ringing;
+    if(r&&r.since!==rk){rk=r.since;ring(r.title,r.sub)}
+    else if(!r&&rk){rk=0;stopRing()}
+    PI=true;fails=0;
+    pulling=true;paint();pulling=false;
+    if(sigA===null)paint();                           /* first contact: hand our alarm to the Pi now */
+  }
+
+  window.TPI=async function(body){
+    try{
+      const r=await fetch("/api/timers",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:tmo(6000)});
+      const d=await r.json();
+      if(!r.ok){toast(d.error||"The Pi refused that");return}
+      apply(d);
+    }catch(e){toast("Can't reach the Pi")}
+  };
+  window.TSOON=function(){if(!soon)soon=setTimeout(()=>{soon=0;pull(true)},700)};   /* a timer just ran out: ask the Pi right away */
+
+  async function pull(force){
+    if(document.hidden&&!force)return;
+    try{
+      const r=await fetch("/api/timers",{cache:"no-store",signal:tmo(4000)});
+      const d=await r.json();
+      if(d&&d.ok)apply(d);
+    }catch(e){if(PI&&++fails>=3){PI=false;toast("Lost the Pi: timers now run on this tablet")}}
+  }
+
+  const _paint=paint;
+  paint=function(){
+    if(!pulling&&PI&&aSig()!==sigA){
+      sigA=aSig();alarmPending=true;clearTimeout(alarmTimer);
+      alarmTimer=setTimeout(async()=>{await TPI({op:"alarm",h:S.alarm.h,m:S.alarm.m,on:S.alarm.on});alarmPending=false},300);
+    }
+    _paint();
+  };
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull()});
   setInterval(pull,3000);pull();
 })();
 </script>
